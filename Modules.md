@@ -13,5 +13,5 @@
 	* [ ] sync mobile location 
 	* [ ] send SOS message
 	* [ ] sync mobile notifications
-##Fun tasks done
+## Fun tasks done
 * Display a monochrome image on SSD_1306 
