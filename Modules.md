@@ -2,7 +2,7 @@
 ## Basic Modules
 * [x] Blink ESP32 led
 * [x] Connect SSD_1306 (0.96 inch) OLED with ESP32
-* [ ] Connect ESP32 to wifi
+* [x] Connect ESP32 to wifi
 * [ ] Make digital watch that has synced with the internet
 * [ ] 
 ## Feature Modules
