@@ -3,7 +3,7 @@
 * [x] Blink ESP32 led
 * [x] Connect SSD_1306 (0.96 inch) OLED with ESP32
 * [x] Connect ESP32 to wifi
-* [ ] Make digital watch that has synced with the internet
+* [x] Make digital watch that has synced with the internet
 * [ ] 
 ## Feature Modules
 * [ ] Make web app (nosql database/google firebase)
