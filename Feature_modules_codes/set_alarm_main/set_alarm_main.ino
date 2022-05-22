@@ -7,6 +7,9 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
+// digital pin 4 has a pushbutton attached to it. Give it a name:
+int pushButton = 4;
+
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
@@ -20,99 +23,96 @@ AsyncWebServer server(80);
 const char *ssid = "Qamar Abbas Shah";
 const char *password = "Alishah786";
 
-const char *PARAM_INPUT_3 = "input3";
+const char *alarm_time_parameter = "alarmTime";
 
-// HTML web page to handle 3 input fields (input1, input2, input3)
+// HTML web page to take time as a input
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
   <title>ESP Input Form</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   </head><body>
   <form action="/get">
-    input3: <input type="datetime-local" name="input3">
+    Enter a time to set alarm: <input type="datetime-local" name="alarmTime">
     <input type="submit" value="Submit">
   </form>
 </body></html>)rawliteral";
 
 void notFound(AsyncWebServerRequest *request)
 {
-    request->send(404, "text/plain", "Not found");
+  request->send(404, "text/plain", "Not found");
 }
 
-void BlinkLed(int LED_BUILTIN, int time /* blink led for how long */)
-{
-    pinMode(LED_BUILTIN, OUTPUT);
-    int start_time = millis();
-    while (millis() - start_time != time)
-    {
-        digitalWrite(LED_BUILTIN, HIGH); // turn the LED on (HIGH is the voltage level)
-        delay(1000);                  // wait for a second
-        digitalWrite(LED_BUILTIN, LOW);  // turn the LED off by making the voltage LOW
-        delay(1000);                  // wait for a second
-    }
+void BlinkLed(int LED_BUILTIN, int time /* blink led for how long */) {
+  pinMode(LED_BUILTIN, OUTPUT);
+  int time_count = 0;
+  while (time_count < time && !digitalRead(pushButton)) {
+    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    delay(500);                      // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+    delay(500);                      // wait for a second
+    time_count++;
+    Serial.print("Blinking led for ");
+    Serial.print(time_count);
+    Serial.print("  Button state: ");
+    Serial.println(digitalRead(pushButton));
+  }
 }
 
 String inputMessage;
 
-void setup()
-{
-    Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    if (WiFi.waitForConnectResult() != WL_CONNECTED)
-    {
-        Serial.println("WiFi Failed!");
-        return;
-    }
-    Serial.println();
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi...");
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("WiFi Failed!");
+    return;
+  }
+  Serial.println();
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
 
-    // Initialize a NTPClient to get time
-    timeClient.begin();
-    // Set offset time in seconds to adjust for your timezone, for example:
-    // GMT +1 = 3600
-    // GMT +8 = 28800
-    // GMT -1 = -3600
-    // GMT 0 = 0
-    timeClient.setTimeOffset(5 * 3600);
+  // Initialize a NTPClient to get time
+  timeClient.begin();
+  // Pak time is 5 hours ahead of GMT so 5 * 3600s
+  timeClient.setTimeOffset(5 * 3600);
 
-    // Send web page with input fields to client
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send_P(200, "text/html", index_html); });
+  // Send web page with input fields to client
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send_P(200, "text/html", index_html);
+  });
 
-    // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
-    server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-    String inputParam;
-    // GET input3 value on <ESP_IP>/get?input3=<inputMessage>
-    if (request->hasParam(PARAM_INPUT_3)) {
-      inputMessage = request->getParam(PARAM_INPUT_3)->value();
-      inputParam = PARAM_INPUT_3;
+  // Send a GET request to <ESP_IP>/get?input1=<inputMessage>
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String alarm_time;
+    // GET alarmTime value on <ESP_IP>/get?alarmTime=<inputMessage>
+    if (request->hasParam(alarm_time_parameter)) {
+      inputMessage = request->getParam(alarm_time_parameter)->value();
+      alarm_time = alarm_time_parameter;
       inputMessage = inputMessage + ":00Z";
     } else {
       inputMessage = "No message sent";
-      inputParam = "none";
+      alarm_time = "none";
     }
     Serial.println(inputMessage);
-    request->send(200, "text/html", "Alarm set for " + inputMessage + "<br>Current time: " +  timeClient.getFormattedDate() +"<br><a href=\"/\">Reset Alarm</a>"); });
-    server.onNotFound(notFound);
-    server.begin();    
+    request->send(200, "text/html", "Alarm set for " + inputMessage + "<br>Current time: " + timeClient.getFormattedDate() + "<br><a href=\"/\">Reset Alarm</a>");
+  });
+  server.onNotFound(notFound);
+  server.begin();
 }
 
-void loop()
-{
-    while (!timeClient.update())
-    {
-        timeClient.forceUpdate();
-    }
-    // The formattedDate comes with the following format:
-    // 2018-05-28T16:00:13Z
-    formattedDate = timeClient.getFormattedDate();
+void loop() {
+  while (!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+  // The formattedDate comes with the following format:
+  // 2018-05-28T16:00:13Z
+  formattedDate = timeClient.getFormattedDate();
 
-    if (formattedDate == inputMessage)
-    {
-        Serial.println("ALARM GOING OFF");
-        BlinkLed(32,25000);
-    }
+  if (formattedDate == inputMessage) {
+    Serial.println("ALARM GOING OFF");
+    // Blink led/buzzer for 5 secs
+    BlinkLed(32, 60);
+  }
 }

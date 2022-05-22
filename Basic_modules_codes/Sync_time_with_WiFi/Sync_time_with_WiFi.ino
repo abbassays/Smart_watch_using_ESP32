@@ -7,8 +7,8 @@
  
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64, &Wire, -1); 
 
-const char* ssid = "Username";
-const char* password = "Password";
+const char* ssid = "Qamar Abbas Shah";
+const char* password = "Alishah786";
  
 int GMTOffset = 18000;  //Replace with your GMT Offset in seconds
 int daylightOffset = 0;  // Replace with your daylight savings offset in seconds
@@ -27,11 +27,13 @@ display.setCursor(0,0);
 display.setTextColor(WHITE);
 
 WiFi.begin(ssid, password);
+  Serial.print("Connecting...");
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    Serial.println("Connecting...");
+    Serial.print(".");
   }
 
+  Serial.println("");
   Serial.println("Connected to Wi-Fi!");
 
 configTime(GMTOffset, daylightOffset, "pool.ntp.org","time.nist.gov");
@@ -53,8 +55,11 @@ display.clearDisplay();
 display.setTextSize(3);
 display.setTextColor(WHITE);
 display.setCursor(0,25);
+if( timeinfo->tm_hour <10)
+display.print("0");
 display.print(timeinfo->tm_hour);
 display.print(":");
+
 if( timeinfo->tm_min <10)
 display.print("0");
 display.print(timeinfo->tm_min);
