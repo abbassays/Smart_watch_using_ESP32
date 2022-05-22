@@ -23,6 +23,7 @@ void setup() {
   display.setCursor(0, 10);
   // Display static text
   display.println("Hello, world!");
+  display.invertDisplay(true);
   display.display(); 
 }
 

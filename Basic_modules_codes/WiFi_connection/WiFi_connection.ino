@@ -5,8 +5,8 @@
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define WIFI_USERNAME "admin" // not actual username and password 
-#define WIFI_PASSWORD "admin"
+#define WIFI_USERNAME "Qamar Abbas Shah" // not actual username and password 
+#define WIFI_PASSWORD "Alishah786"
 #define TIMEOUT 20000 // timeout after 20 secs
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
