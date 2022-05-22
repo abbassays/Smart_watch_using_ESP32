@@ -22,8 +22,8 @@
 AsyncWebServer server(80);
 
 // REPLACE WITH YOUR NETWORK CREDENTIALS
-const char* ssid = "REPLACE_WITH_YOUR_SSID";
-const char* password = "REPLACE_WITH_YOUR_PASSWORD";
+const char* ssid = "Qamar Abbas Shah";
+const char* password = "Alishah786";
 
 const char* PARAM_INPUT_1 = "input1";
 const char* PARAM_INPUT_2 = "input2";
@@ -44,7 +44,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     <input type="submit" value="Submit">
   </form><br>
   <form action="/get">
-    input3: <input type="text" name="input3">
+    input3: <input type="datetime-local" name="input3">
     <input type="submit" value="Submit">
   </form>
 </body></html>)rawliteral";

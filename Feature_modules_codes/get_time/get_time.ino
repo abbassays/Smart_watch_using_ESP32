@@ -44,7 +44,6 @@ void loop() {
   }
   // The formattedDate comes with the following format:
   // 2018-05-28T16:00:13Z
-  // We need to extract date and time
   formattedDate = timeClient.getFormattedDate();
   Serial.println(formattedDate);
   delay(1000);
