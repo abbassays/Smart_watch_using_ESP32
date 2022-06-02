@@ -90,8 +90,8 @@ int buttonStatePrevious = LOW;  // previousstate of the switch
 unsigned long minButtonLongPressDuration = 3000; // Time we wait before we see the press as a long press
 unsigned long buttonLongPressMillis;             // Time in ms when we the button was pressed
 bool buttonStateLongPress = false;               // True if it is a long press
-const int intervalButton = 50;      // Time between two readings of the button state
-unsigned long previousButtonMillis; // Timestamp of the latest reading
+const int intervalButton = 50;                   // Time between two readings of the button state
+unsigned long previousButtonMillis;              // Timestamp of the latest reading
 
 unsigned long buttonPressDuration;
 
@@ -101,13 +101,17 @@ String form_time;
 String live_time;
 String formattedDate;
 
+// check if internet is connected after every "check_delay" seconds
+unsigned long check_delay = 20000; // 10 seconds delay
+unsigned long previous_time = 0;
+
 void notFound(AsyncWebServerRequest *request);
 void ring_alarm(int LED_BUILTIN, int time);
 void readButtonState();
 void send_email(const char *event);
 String format_date(String raw_date);
 String format_time(String raw_time);
-void oledDisplayCenter(String text);
+void oledDisplayCenter(String text, int size);
 void setupDisplay();
 void setupDisplayStyle(int size, int X, int Y);
 
@@ -118,8 +122,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 AsyncWebServer server(80);
 
 // REPLACE WITH YOUR NETWORK CREDENTIALS
-const char *ssid = "Qamar Abbas Shah";
-const char *password = "Alishah786";
+const char *ssid = "Ali's Phone";
+const char *password = "12456789";
+// const char *ssid = "Qamar Abbas Shah";
+// const char *password = "Alishah786";
 const char *host = "maker.ifttt.com";
 const char *apiKey = "dQru8C5MlOVIjwd_AvbTbjNaodmKPTopBzA0sX25zY7";
 
@@ -138,9 +144,6 @@ const char index_html[] PROGMEM = R"rawliteral(
   </form>
 </body></html>)rawliteral";
 
-
-
-
 void setup()
 {
   // start serial monitor
@@ -154,11 +157,20 @@ void setup()
   if (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.println("WiFi Failed!");
-    oledDisplayCenter("Press EN button");
+    oledDisplayCenter("Reconnecting...", 1);
+    Serial.println("Reconnecting to WIFI network on SETUP");
+    WiFi.disconnect();
+    WiFi.reconnect();
     return;
   }
   Serial.print("Connected to IP Address: ");
   Serial.println(WiFi.localIP());
+  display.clearDisplay();
+  oledDisplayCenter("Connected to:", 1);
+  setupDisplayStyle(1, 20, 36);
+  display.print(WiFi.localIP());
+  display.display();
+  delay(2000);
   // Initialize a NTPClient to get time
   timeClient.begin();
   // Pak time is 5 hours ahead of GMT so 5 * 3600s
@@ -190,13 +202,42 @@ void setup()
     Serial.println(format_time(form_time));
     request->send(200, "text/html", "Current time: " + format_date(timeClient.getFormattedDate()) + " " +  format_time(timeClient.getFormattedDate()) + "<br>Alarm set for: " + format_date(form_time) + " " + format_time(form_time) + "<br><a href=\"/\">Reset Alarm</a>"); });
 
-
   server.onNotFound(notFound);
   server.begin();
+
 }
 
 void loop()
 {
+
+
+  unsigned long current_time = millis(); // number of milliseconds since the upload
+  // checking for WIFI connection & reconnect if not connected
+  Serial.println("above if");
+  if ((WiFi.status() != WL_CONNECTED) && (current_time - previous_time >= check_delay))
+  {
+  Serial.println("entered if");
+    Serial.println("Reconnecting to WIFI network");
+    oledDisplayCenter("WiFi Disconnected, Reconnecting...", 1);
+    delay(3000);
+    WiFi.disconnect();
+    WiFi.reconnect();
+    WiFi.begin(ssid,password);
+    previous_time = current_time;
+    if(WiFi.status() == WL_CONNECTED)
+    {
+      oledDisplayCenter("Reconnected to WiFi", 1);
+      setupDisplayStyle(1,24,36);
+      display.print(WiFi.localIP());
+      Serial.println("Printed IP");
+      display.display();
+      delay(5000);
+      Serial.println("If exit");
+    }
+      Serial.println("Outer If exit");
+  }
+
+
   // update time constantly
   while (!timeClient.update())
   {
@@ -209,10 +250,10 @@ void loop()
 
   display.clearDisplay();
   // need to position text everytime in loop
-  // oledDisplayCenter(format_date(live_time));
-  setupDisplayStyle(1, 40, 24);
+  // oledDisplayCenter(format_time(live_time),2);
+  setupDisplayStyle(2, 16, 20);
   display.print(format_time(live_time));
-  setupDisplayStyle(1, 34, 32);
+  setupDisplayStyle(1, 34, 40);
   display.print(format_date(live_time));
   display.display();
   delay(1000);
@@ -227,14 +268,13 @@ void loop()
   readButtonState();        // read the button state
 }
 
-
 // -------------------------------------------------------------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------------------------------------------------------
 void notFound(AsyncWebServerRequest *request)
 {
   request->send(404, "text/plain", "Not found");
 }
-void oledDisplayCenter(String text)
+void oledDisplayCenter(String text, int size)
 {
   int16_t x1;
   int16_t y1;
@@ -245,13 +285,14 @@ void oledDisplayCenter(String text)
 
   // display on horizontal and vertical center
   display.clearDisplay(); // clear display
-  display.setTextSize(1);
+  display.setTextSize(size);
   display.setTextColor(WHITE);
   // to display center axis of a text
-  // Serial.print("X: ");
-  // Serial.print((SCREEN_WIDTH - width) / 2);
-  // Serial.print("  Y: ");
-  // Serial.println((SCREEN_HEIGHT - height) / 2);
+  Serial.print("X: ");
+  Serial.print((SCREEN_WIDTH - width) / 2);
+  Serial.print("  Y: ");
+  Serial.println((SCREEN_HEIGHT - height) / 2);
+  // set cursor
   display.setCursor((SCREEN_WIDTH - width) / 2, (SCREEN_HEIGHT - height) / 2);
   display.println(text); // text to display
   display.display();
@@ -291,7 +332,7 @@ void setupDisplay()
   display.drawBitmap(0, 0, ali_map, 128, 64, 1);
   display.display();
   delay(3000);
-  oledDisplayCenter("dev by abbassays");
+  oledDisplayCenter("dev by abbassays", 1);
   delay(3000);
 }
 void readButtonState()
@@ -316,10 +357,17 @@ void readButtonState()
     // If the time the button has been pressed is larger or equal to the time needed for a long press
     if (buttonState == HIGH && !buttonStateLongPress && buttonPressDuration >= minButtonLongPressDuration)
     {
-      buttonStateLongPress = true;
-      Serial.println("Button long pressed");
+      if(WiFi.status() != WL_CONNECTED)
+      {
+        oledDisplayCenter("No WiFi, can't send SOS email", 1);
+      }
+      else
+      {
+        buttonStateLongPress = true;
+        Serial.println("Button long pressed");
 
-      send_email("SOS_email");
+        send_email("SOS_email");
+      }
     }
     // If the button is released AND
     // If the button was pressed before
@@ -336,7 +384,22 @@ void readButtonState()
       //       and can be removed.
       if (buttonPressDuration < minButtonLongPressDuration)
       {
-        Serial.println("Button pressed shortly");
+        if(WiFi.status() == WL_CONNECTED){
+          
+          Serial.println("Button pressed shortly");
+          oledDisplayCenter("Connected to:", 1);
+          setupDisplayStyle(1,20,36);
+          display.print(WiFi.localIP());
+          display.display();
+          delay(5000);
+        }
+        else
+        {
+          Serial.println("Button pressed shortly");
+          oledDisplayCenter("Not connected to WiFi", 1);
+          display.display();
+          delay(5000);
+        }
       }
     }
     // store the current timestamp in previousButtonMillis
@@ -372,7 +435,8 @@ void send_email(const char *event)
     {
       String line = client.readStringUntil('\r');
       Serial.print(line);
-      oledDisplayCenter("SOS email sent!");
+      oledDisplayCenter("SOS email sent!", 1);
+      delay(2000);
     }
     else
     {
@@ -390,13 +454,13 @@ void ring_alarm(int LED_BUILTIN, int time /* blink led for how long */)
   int time_count = 0;
   while (time_count < time && !digitalRead(pushButton))
   {
-    oledDisplayCenter("Alarm Ringing!");
+    oledDisplayCenter("Alarm Ringing!", 1);
     digitalWrite(LED_BUILTIN, HIGH); // turn the LED on (HIGH is the voltage level)
     delay(500);                      // wait for a second
     digitalWrite(LED_BUILTIN, LOW);  // turn the LED off by making the voltage LOW
     delay(500);                      // wait for a second
     time_count++;
   }
-  oledDisplayCenter("Alarm turned off!");
+  oledDisplayCenter("Alarm turned off!", 1);
   delay(3000);
 }
